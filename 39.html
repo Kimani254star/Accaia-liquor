@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Acacia Liquor Store</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
+    body.dark { background: #121212; color: #f5f5f5; }
+    #products { display: flex; gap: 30px; }
+    #advancedFilters { flex: 1; max-width: 250px; }
+    #productGrid { flex: 3; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .product-tile { border: 1px solid #ccc; padding: 10px; border-radius: 8px; text-align: center; background: #fff; }
+    body.dark .product-tile { background: #1e1e1e; border-color: #444; }
+    .product-tile img { max-width: 100%; height: 150px; object-fit: cover; }
+    .add-to-cart { margin-top: 10px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #222; color: #fff; padding: 10px 20px; border-radius: 5px; z-index: 999; }
+    #cartModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #f9f9f9; border: 1px solid #aaa; padding: 20px; z-index: 999; max-width: 400px; width: 90%; }
+    .heart-icon { cursor: pointer; }
+    .loved { color: red; }
+    header { background: #333; color: white; padding: 10px 20px; position: sticky; top: 0; z-index: 999; }
+    nav ul { list-style: none; display: flex; gap: 20px; margin: 0; padding: 0; }
+    nav li a { color: white; text-decoration: none; }
+    #themeToggle { cursor: pointer; margin-left: 20px; font-size: 20px; }
+    section { padding: 40px 0; }
+    .payment-option { border: 1px solid #aaa; padding: 10px; margin: 10px 0; border-radius: 6px; }
+    #receiptSection { background: #f9f9f9; color: #000; padding: 20px; display: none; }
+    body.dark #receiptSection { background: #1e1e1e; color: #fff; border-color: #444; }
+    Body.dark #cartModal, 
+body.dark #receiptSection {
+  background: #1e1e1e;
+  color: #fff;
+  border-color: #444;
+}
+body.dark .testimonial-card {
+  background: #1e1e1e;
+  color: #fff;
+  border-color: #444;
+}
+  </style>
+</head>
+<body>
+
+<header>
+  <nav style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <h2 style="margin: 0;" id="home">🍷 Acacia Liquor</h2>
+    <ul>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#products">Products</a></li>
+      <li><a href="#testimonials">Testimonials</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <span id="themeToggle" onclick="toggleTheme()">🌙</span>
+    <button onclick="showCart()">🛒 View Cart</button>
+  </nav>
+</header>
+
+<section id="home">
+  <h1>Welcome to Acacia Liquor Store 🍷</h1>
+  <p>Explore our curated selection of premium wines, whiskeys, and gifts.</p>
+</section>
+
+<section id="products">
+  <div id="advancedFilters">
+    <input type="text" id="searchInput" placeholder="Search products..." oninput="applyFilters()" style="width: 100%; padding: 10px; margin-bottom: 20px;" />
+    <h3>Filter by Category</h3>
+    <label><input type="checkbox" value="Red Wine" onchange="applyFilters()"> Red Wine</label><br>
+    <label><input type="checkbox" value="White Wine" onchange="applyFilters()"> White Wine</label><br>
+    <label><input type="checkbox" value="Whiskey" onchange="applyFilters()"> Whiskey</label><br>
+    <label><input type="checkbox" value="vodka" onchange="applyFilters()"> vodka</label><br>
+    <label><input type="checkbox" value="Gin" onchange="applyFilters()"> Gin</label><br>
+    <label><input type="checkbox" value="soda" onchange="applyFilters()"> soda</label><br>
+    <label><input type="checkbox" value="Softdrinks" onchange="applyFilters()"> Soft drinks </label><br>
+    <label><input type="checkbox" value="Gifts for him" onchange="applyFilters()"> Gifts for him </label><br>
+    <label><input type="checkbox" value="Gifts for her" onchange="applyFilters()"> Gifts for her </label><br>
+
+    <h3>Filter by Size</h3>
+    <label><input type="checkbox" value="750ml" data-type="size" onchange="applyFilters()"> 750ml</label><br>
+    <label><input type="checkbox" value="1L" data-type="size" onchange="applyFilters()"> 1L</label><br>
+    <h3>Filter by Price</h3>
+    <label><input type="checkbox" value="Under1000" data-type="price" onchange="applyFilters()"> Under 1000</label><br>
+    <label><input type="checkbox" value="1000-1999" data-type="price" onchange="applyFilters()"> 1000–1999</label><br>
+    <label><input type="checkbox" value="2000-3000" data-type="price" onchange="applyFilters()"> 2000–3000</label><br>
+    <label><input type="checkbox" value="Above3000" data-type="price" onchange="applyFilters()"> Above 3000</label><br>
+    <button onclick="clearFilters()">Clear Filters</button>
+  </div>
+  <div id="productGrid"></div>
+</section>
+
+<!-- Cart and Receipt -->
+<div id="cartModal">
+  <h3>Your Cart</h3>
+  <ul id="cartItems"></ul>
+  <label>Shipping:
+    <select id="shippingMethod" onchange="showCart()">
+      <option value="200">within nairobi (KES 200)</option>
+      <option value="500">Express (KES 500)</option>
+    </select>
+  </label>
+  <p><strong>Total: KES <span id="cartTotal">0</span></strong></p>
+  <button onclick="proceedToPay()">Proceed to Pay via WhatsApp</button>
+  <button onclick="clearCart()">Clear Cart</button>
+  <button onclick="closeCart()">Close</button>
+  <button onclick="viewReceipt()">🧾 View Receipt</button>
+  <button onclick="printReceipt()">🖨️ Print Receipt</button>
+</div>
+
+<div id="receiptSection">
+  <h3>Receipt</h3>
+  <pre id="receiptContent"></pre>
+</div>
+<div class="testimonial-card">
+  <h2>Testimonials</h2>
+  <p>What our happy customers are saying...</p>
+
+  <div style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 20px;">
+    <div style="background: #eee; padding: 20px; border-radius: 10px;">
+      <p>“Excellent variety and fast delivery. Found my favorite whiskey at a great price!”</p>
+      <strong>— Brian K., Nairobi</strong>
+    </div>
+    <div style="background: #eee; padding: 20px; border-radius: 10px;">
+      <p>“Loved the wine and gift options. It was easy to shop and check out via WhatsApp.”</p>
+      <strong>— Alice M., Kiambu</strong>
+    </div>
+    <div style="background: #eee; padding: 20px; border-radius: 10px;">
+      <p>“Customer support was responsive and helpful. Highly recommend Acacia Liquor!”</p>
+      <strong>— Kelvin O., Nakuru</strong>
+    </div>
+    <div style="background: #eee; padding: 20px; border-radius: 10px;">
+      <p>“Great presentation on the gift hampers. My girlfriend loved it!”</p>
+      <strong>— Michael N., Eldoret</strong>
+    </div>
+  </div>
+</section>
+</div>
+<div id="receiptSection" style="display:none; padding: 20px; background:#fff; color:#000;">
+  <h3>Receipt</h3>
+  <pre id="receiptContent" style="white-space: pre-wrap;"></pre>
+</div>
+<section id="social" style="text-align: center; padding: 20px;">
+  <h3>Connect With Us</h3>
+  <a href="https://facebook.com/joseph kimany" target="_blank" style="margin: 10px; color: #3b5998;">
+    <i class="fab fa-facebook fa-2x"></i>
+  </a>
+  <a href="https://instagram.com/josephkimany6983" target="_blank" style="margin: 10px; color: #e4405f;">
+    <i class="fab fa-instagram fa-2x"></i>
+  </a>
+  <a href="https://wa.me/254731858997" target="_blank" style="margin: 10px; color: #25d366;">
+    <i class="fab fa-whatsapp fa-2x"></i>
+  </a>
+  <a href="mailto:josephkimany6983@gmail.com" style="margin: 10px; color: #dd4b39;">
+    <i class="fas fa-envelope fa-2x"></i>
+  </a>
+  <a href="https://www.tiktok.com/@architecture846"target="_blank" style="margin: 10px; color: #000000;">
+    <i class="fab fa-tiktok fa-2x"></i>
+  </a>
+   <a href="https://www.x.com/@josephkimany"target="_blank" style="margin: 10px; color: #1D9BF0;">
+    <i class="fab fa-x fa-2x"></i>
+  </a>
+
+<!-- Contact Section -->
+<section id="contact">
+  <h2>Contact Us</h2>
+  <div class="contact-item"><strong>Phone:</strong> <a href="tel:+254717346231">+254 724 726</a></div>
+    <div class="contact-item"><strong>Phone:</strong> <a href="tel:+254717346231">+254 717 346231</a></div>
+    <div class="contact-item"><strong>Phone:</strong> <a href="tel:+254712773563">+254 712 773563</a></div>
+    <div class="contact-item"><strong>Email:</strong> <a href="mailto:info@acacialiquorstore.com">info@acacialiquorstore.com</a></div>
+    <div class="contact-item"><strong>Address:</strong> Acacia Liquor Store, Nairobi, Kenya</div>
+    <div class="contact-item"><strong>WhatsApp:</strong> <a href="https://wa.me/254731858997" target="_blank">Chat with us</a></div>
+    <div class="contact-item"><strong>Instagram:</strong> <a href="https://instagram.com/josephkimany6983" target="_blank">josephkimany6983</a></div>
+  </div>
+</section>
+
+<script>
+const productList = [
+  { name: "Baron de Valls Red", price: 650, category: "Red Wine", size: "750ml", image: "images/baron-de-valls-red-wine.jpg" },
+  { name: "Asconi Pastoral Red", price: 1300, category: "Red Wine", size: "750ml", image: "images/Asconi Pastoral Red.jpg" },
+  { name: "Obikwa Shiraz 2017", price: 1745, category: "Red Wine", size: "750ml", image: "images/Obikwa Shiraz 2017.jpg" },
+  { name: "Kumala Merlot Pinotage", price: 1575, category: "Red Wine", size: "750ml", image: "images/Kumala Merlot Pinotage.jpg" },
+  { name: "Cielo Merlot 750 ml", price: 2200, category: "Red Wine", size: "750ml", image: "images/Cielo Merlot 750 ml.jpg" },
+  { name: "Cielo Merlot 1l", price: 2850, category: "Red Wine", size: "1L", image: "images/Cielo Merlot 1l.jpg" },
+  { name: "Amani Bay Smooth Red", price: 1550, category: "Red Wine", size: "750ml", image: "images/Amani Bay Smooth Red.jpg" },
+  { name: "4th Street Sweet Red", price: 1400, category: "Red Wine", size: "750ml", image: "images/4th Street Sweet Red.jpg" },
+  { name: "Obikwa Chardonnay", price: 1745, category: "White Wine", size: "750ml", image: "images/Obikwa Chardonnay.jpg" },
+  { name: "Asconi Ice Wine", price: 1500, category: "White Wine", size: "750ml", image: "images/Asconi Ice Wine.jpg" },
+  { name: "Nederburg Sauvignon Blanc", price: 1950, category: "White Wine", size: "750ml", image: "images/Nederburg Sauvignon Blanc.jpg" },
+  { name: "Kumala Chenin Blanc", price: 1575, category: "White Wine", size: "750ml", image: "images/Kumala Chenin Blanc.jpg" },
+  { name: "Cielo Pinot Grigio", price: 2300, category: "White Wine", size: "750ml", image: "images/Cielo Pinot Grigio.jpg" },
+  { name: "Cielo Pinot Grigio", price: 2300, category: "White Wine", size: "1L", image: "images/Cielo Pinot Grigio..jpg" },
+  { name: "Jameson Irish Whiskey", price: 2650, category: "Whiskey", size: "750ml", image: "images/Jameson Irish Whiskey.jpg" },
+  { name: "Jameson Irish Whiskey 4.5", price: 18000, category: "Whiskey", size: "4.5l", image: "images/Jameson Irish Whiskey 4.5.jpg" },
+  { name: "Glenfiddich 12 Years", price: 5500, category: "Whiskey", size: "750ml", image: "images/Glenfiddich 12 Years.jpg" },
+  { name: "Johnnie Walker Black Label", price: 3600, category: "Whiskey", size: "750ml", image: "images/Johnnie Walker Black Label.jpg" },
+  { name: "Johnnie Walker Red Label", price: 2100, category: "Whiskey", size: "750ml", image: "images/Johnnie Walker Red Label.jpg" },
+  { name: "Black & White Blackl", price: 1400, category: "Whiskey", size: "750ml", image: "images/Black & White Black.jpg" },
+  { name: "Chivas Regal 12 Years", price: 4200, category: "Whiskey", size: "750ml", image: "images/Chivas Regal 12 Years.jpg" },
+  { name: "Chivas Regal 12 Years", price: 4200, category: "Whiskey", size: "1L", image: "images/Chivas Regal 12 Years..jpg" },
+  { name: "Ballantine's Finest", price: 2500, category: "Whiskey", size: "750ml", image: "images/Ballantine's Finest.jpg" },
+  { name: "Famous Grouse", price: 2300, category: "Whiskey", size: "750ml", image: "images/Famous Grouse.jpg" },
+  { name: "William Lawson's William Lawson's Scotch l", price: 1900, category: "Whiskey", size: "750ml", image: "images/William Lawson's William Lawson's Scotch.jpg" },
+  { name: "William Lawson's WillIam Lawsons Spiced Whisky", price: 1800, category: "Whiskey", size: "700ml", image: "images/William Lawson's WillIam Lawsons Spiced Whisky.jpg" },
+  { name: "Best Best Whisky", price: 1800, category: "Whiskey", size: "700ml", image: "images/Best Best Whisky.jpg" },
+  { name: "Jack Daniel's Jack 1l", price: 5200, category: "Whiskey", size: "1l", image: "images/Jack Daniel's Jack 1l.jpg" },
+  { name: "Jack Daniel's Honey", price: 4000, category: "Whiskey", size: "700ml", image: "images/Jack Daniel's Honey.jpg" },
+  { name: "Jagermeister Herbal Liqueur", price: 5000, category: "Whiskey", size: "750ml", image: "images/Jagermeister Herbal Liqueur.jpg" },
+  { name: "Hennessy VS NBA Limited edition", price: 13500, category: "Whiskey", size: "700ml", image: "images/Hennessy VS NBA Limited edition.jpg" },
+  { name: "Hennessy VS Cognac", price: 7500, category: "Whiskey", size: "350ml", image: "images/Hennessy VS Cognac.jpg" },
+
+
+  { name: "Gilbey’s Gin", price: 1150, category: "Gin", size: "750ml", image: "images/Gilbey’s Gin.jpg" },
+  { name: "Tanqueray Blackcurrant Royale", price: 3600, category: "Gin", size: "750ml", image: "images/Tanqueray Blackcurrant Royale.jpg" },
+  { name: "Bombay Sapphire", price: 2950, category: "Gin", size: "750ml", image: "images/Bombay Sapphire.jpg" },
+  { name: "Hendrick’s", price: 5000, category: "Gin", size: "750ml", image: "images/Hendrick’s.jpg" },
+  { name: "Plymouth Gin", price: 4300, category: "Gin", size: "750ml", image: "images/Plymouth Gin.jpg" },
+  { name: "Smirnoff Red", price: 1000, category: "Gin", size: "750ml", image: "images/Smirnoff Red.jpg" },
+  { name: "Skyy Vodka", price: 1100, category: "Vodka", size: "750ml", image: "images/Skyy Vodka.jpg" },
+  { name: "Absolut Vodka", price: 2100, category: "Vodka", size: "750ml", image: "images/Absolut Vodka.jpg" },
+  { name: "Ciroc Vodka", price: 5200, category: "Vodka", size: "750ml", image: "images/Ciroc Vodka.jpg" },
+  { name: "chrome-vodka", price: 800, category: "Vodka", size: "750ml", image: "images/chrome-vodka.jpg" },
+  { name: " Chrome Lemon ", price: 700, category: "Vodka", size: "750ml", image: "images/Chrome Lemon.jpg" },
+  { name: "Belvedere Vodka", price: 5200, category: "Vodka", size: "750ml", image: "images/Belvedere Vodka.jpg" },
+  { name: "Soda 1.25l", price: 125, category: "Soda", size: "1.25L", image: "images/soda 1.25l.jpg" },
+  { name: "Soda 2L", price: 125, category: "Soda", size: "2L", image: "images/Soda 2L.jpg" },
+  { name: "Tanqueray chocolate snacks", price: 5200, category: "Gifts for him", size: "Mixed", image: "images/Tanqueray chocolate snacks.jpg" },
+  { name: "Gift Hamper for Her", price: 4800, category: "Gifts for her", size: "Mixed", image: "images/TanquerayGiftSet-1.jpg" } 
+];
+
+let cart = JSON.parse(localStorage.getItem('cart') || '{}');
+
+function displayProducts(list = productList) {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const tile = document.createElement('div');
+    tile.className = 'product-tile';
+    tile.innerHTML = `
+      <img src="${p.image || 'images/default.jpg'}" alt="${p.name}" />
+      <h3>${p.name}</h3>
+      <p>${p.size} — KES ${p.price}</p>
+      <button class="add-to-cart" onclick="addToCart('${p.name}', ${p.price})">Add to Cart</button>
+    `;
+    grid.appendChild(tile);
+  });
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const categoryFilters = [...document.querySelectorAll('#advancedFilters input[type="checkbox"]:checked:not([data-type])')].map(cb => cb.value.toLowerCase());
+  const sizeFilters = [...document.querySelectorAll('#advancedFilters input[data-type="size"]:checked')].map(cb => cb.value.toLowerCase());
+  const priceFilters = [...document.querySelectorAll('#advancedFilters input[data-type="price"]:checked')].map(cb => cb.value);
+
+  const filtered = productList.filter(p => {
+    const name = p.name.toLowerCase();
+    const category = p.category.toLowerCase();
+    const size = p.size.toLowerCase();
+    const price = p.price;
+
+    const matchSearch = name.includes(search);
+    const matchCategory = !categoryFilters.length || categoryFilters.includes(category);
+    const matchSize = !sizeFilters.length || sizeFilters.includes(size);
+    const matchPrice = !priceFilters.length || priceFilters.some(range => {
+      if (range === 'Under1000') return price < 1000;
+      if (range === '1000-1999') return price >= 1000 && price <= 1999;
+      if (range === '2000-3000') return price >= 2000 && price <= 3000;
+      if (range === 'Above3000') return price > 3000;
+    });
+
+    return matchSearch && matchCategory && matchSize && matchPrice;
+  });
+
+  displayProducts(filtered);
+}
+
+function clearFilters() {
+  document.querySelectorAll('#advancedFilters input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.getElementById('searchInput').value = '';
+  displayProducts();
+}
+
+function addToCart(name, price) {
+  if (cart[name]) cart[name].qty++;
+  else cart[name] = { price, qty: 1 };
+  localStorage.setItem('cart', JSON.stringify(cart));
+  toast(`${name} added to cart!`);
+}
+
+function updateQty(encodedName, change) {
+  const name = decodeURIComponent(encodedName);
+  if (cart[name]) {
+    cart[name].qty += change;
+    if (cart[name].qty <= 0) {
+      delete cart[name];
+    }
+    localStorage.setItem('cart', JSON.stringify(cart));
+    showCart();
+  }
+}
+
+function removeItem(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  if (cart[name]) {
+    delete cart[name];
+    localStorage.setItem('cart', JSON.stringify(cart));
+    showCart();
+  }
+}
+
+function showCart() {
+  const ul = document.getElementById('cartItems');
+  ul.innerHTML = '';
+  let subtotal = 0;
+  for (const [name, info] of Object.entries(cart)) {
+    const total = info.price * info.qty;
+    subtotal += total;
+    const li = document.createElement('li');
+    li.innerHTML = `
+      ${name} — KES ${info.price} × 
+      <button onclick="updateQty('${encodeURIComponent(name)}', -1)">➖</button>
+      ${info.qty}
+      <button onclick="updateQty('${encodeURIComponent(name)}', 1)">➕</button>
+      = KES ${total}
+      <button onclick="removeItem('${encodeURIComponent(name)}')">❌</button>
+    `;
+    ul.appendChild(li);
+  }
+  const ship = +document.getElementById('shippingMethod').value;
+  document.getElementById('cartTotal').textContent = subtotal + ship;
+  document.getElementById('cartModal').style.display = 'block';
+}
+
+function closeCart() {
+  document.getElementById('cartModal').style.display = 'none';
+}
+
+function proceedToPay() {
+  if (!Object.keys(cart).length) return toast('Cart is empty!');
+  let msg = 'Order Summary:\n';
+  let subtotal = 0;
+  for (const [name, info] of Object.entries(cart)) {
+    msg += `${name} x${info.qty} = KES ${info.price * info.qty}\n`;
+    subtotal += info.price * info.qty;
+  }
+  const ship = +document.getElementById('shippingMethod').value;
+  const total = subtotal + ship;
+  msg += `\nSubtotal: KES ${subtotal}\nDelivery: KES ${ship}\nTotal: KES ${total}\n\nPay via M-PESA Till 123456.`;
+  window.open(`https://wa.me/254731858997?text=${encodeURIComponent(msg)}`, '_blank');
+  cart = {};
+  localStorage.removeItem('cart');
+  closeCart();
+  toast('Opening WhatsApp...');
+}
+
+function viewReceipt() {
+  if (!Object.keys(cart).length) return toast('Cart is empty!');
+  const receipt = ['ACACIA LIQUOR STORE', '------------------------'];
+  let subtotal = 0;
+  for (const [name, info] of Object.entries(cart)) {
+    const total = info.price * info.qty;
+    receipt.push(`${name} x${info.qty} = KES ${total}`);
+    subtotal += total;
+  }
+  const ship = +document.getElementById('shippingMethod').value;
+  const total = subtotal + ship;
+  receipt.push('------------------------', `Subtotal: KES ${subtotal}`, `Shipping: KES ${ship}`, `TOTAL: KES ${total}`, 'Thank you for shopping with us!');
+  document.getElementById('receiptContent').textContent = receipt.join('\n');
+  document.getElementById('receiptSection').style.display = 'block';
+}
+
+function printReceipt() {
+  const content = document.getElementById('receiptSection').innerHTML;
+  const win = window.open('', '', 'width=800,height=600');
+  win.document.write(`<html><head><title>Print Receipt</title></head><body>${content}</body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function clearCart() {
+  cart = {};
+  localStorage.removeItem('cart');
+  showCart();
+  toast('Cart cleared.');
+}
+
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const div = document.createElement('div');
+  div.className = 'toast';
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('themeToggle').textContent = dark ? '☀️' : '🌙';
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+}
+
+window.onload = () => {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+  displayProducts();
+};
+
+</script>
+</body>
+</html>
